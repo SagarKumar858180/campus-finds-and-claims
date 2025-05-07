@@ -1,6 +1,7 @@
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
+import { createUser, findUserByEmail } from "@/services/mongoService";
 
 // Types
 interface User {
@@ -26,16 +27,6 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
 });
 
-// Mock user data - in a real app, this would come from Firebase
-const MOCK_USERS = [
-  {
-    id: "user1",
-    email: "user@example.com",
-    password: "password123",
-    name: "Demo User",
-  },
-];
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,12 +48,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Login function
   const login = async (email: string, password: string): Promise<User> => {
-    // This would be a Firebase auth call in a real app
-    const user = MOCK_USERS.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    );
+    const user = await findUserByEmail(email);
 
-    if (!user) {
+    if (!user || user.password !== password) {
       throw new Error("Invalid email or password");
     }
 
@@ -80,34 +68,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Register function
   const register = async (email: string, password: string, name: string): Promise<User> => {
-    // This would be a Firebase auth call in a real app
-    const existingUser = MOCK_USERS.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase()
-    );
+    // Check if user already exists
+    const existingUser = await findUserByEmail(email);
 
     if (existingUser) {
       throw new Error("Email already in use");
     }
 
-    const newUser = {
-      id: `user${MOCK_USERS.length + 1}`,
-      email,
-      password,
-      name,
-    };
-
-    MOCK_USERS.push(newUser);
-
-    const { password: _, ...userWithoutPassword } = newUser;
-    setCurrentUser(userWithoutPassword);
-    localStorage.setItem("campus_user", JSON.stringify(userWithoutPassword));
+    // Create new user in MongoDB
+    const newUser = await createUser(email, password, name);
+    
+    setCurrentUser(newUser);
+    localStorage.setItem("campus_user", JSON.stringify(newUser));
     
     toast({
       title: "Registration successful",
       description: `Welcome, ${name}!`,
     });
     
-    return userWithoutPassword;
+    return newUser;
   };
 
   // Logout function

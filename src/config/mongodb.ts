@@ -1,24 +1,58 @@
 
-// This file is kept for compatibility but doesn't actually connect to MongoDB in browser
-// In a real implementation, this would be a server-side script
+import { MongoClient, Db, ServerApiVersion } from 'mongodb';
 
-// Mock MongoDB client for browser compatibility
-export async function connectToMongo() {
-  console.log("Mock MongoDB connection for browser development");
-  return {};
+// MongoDB connection string - in production, this would come from environment variables
+const MONGODB_URI = 'mongodb://localhost:27017/lost_found';
+
+let cachedClient: MongoClient | null = null;
+let cachedDb: Db | null = null;
+
+export async function connectToMongo(): Promise<{ client: MongoClient; db: Db }> {
+  // For browser compatibility during development
+  if (typeof window !== 'undefined') {
+    console.log("Using mock MongoDB for browser development");
+    return { client: {} as MongoClient, db: {} as Db };
+  }
+
+  if (cachedClient && cachedDb) {
+    return { client: cachedClient, db: cachedDb };
+  }
+
+  const client = new MongoClient(MONGODB_URI, {
+    serverApi: {
+      version: ServerApiVersion.v1,
+      strict: true,
+      deprecationErrors: true,
+    }
+  });
+
+  await client.connect();
+  const db = client.db();
+  
+  cachedClient = client;
+  cachedDb = db;
+  
+  console.log("Connected to MongoDB");
+  return { client, db };
 }
 
-// Get mock database instance
 export function getDb() {
-  return {};
+  if (!cachedDb) {
+    throw new Error('You must call connectToMongo before using getDb');
+  }
+  return cachedDb;
 }
 
-// Close mock MongoDB connection
 export async function closeMongoConnection() {
-  console.log("Mock MongoDB connection closed");
+  if (cachedClient) {
+    await cachedClient.close();
+    cachedClient = null;
+    cachedDb = null;
+    console.log("MongoDB connection closed");
+  }
 }
 
-// Collections names (for consistency)
+// Collections names
 export const collections = {
   users: "users",
   lostItems: "lostItems",

@@ -199,12 +199,14 @@ export const getLostItems = async (): Promise<Item[]> => {
         .sort({ createdAt: -1 })
         .toArray();
       
-      return lostItems.map(item => ({
-        ...item,
-        id: item._id.toString(),
-        _id: undefined, // Remove _id property
-        createdAt: typeof item.createdAt === 'string' ? item.createdAt : item.createdAt.toISOString()
-      })) as Item[];
+      return lostItems.map(item => {
+        const { _id, ...rest } = item;
+        return {
+          ...rest,
+          id: _id.toString(),
+          createdAt: typeof rest.createdAt === 'string' ? rest.createdAt : rest.createdAt.toISOString()
+        } as Item;
+      });
     } catch (error) {
       console.error("Error getting lost items:", error);
       return [];
@@ -224,12 +226,14 @@ export const getFoundItems = async (): Promise<Item[]> => {
         .sort({ createdAt: -1 })
         .toArray();
       
-      return foundItems.map(item => ({
-        ...item,
-        id: item._id.toString(),
-        _id: undefined, // Remove _id property
-        createdAt: typeof item.createdAt === 'string' ? item.createdAt : item.createdAt.toISOString()
-      })) as Item[];
+      return foundItems.map(item => {
+        const { _id, ...rest } = item;
+        return {
+          ...rest,
+          id: _id.toString(),
+          createdAt: typeof rest.createdAt === 'string' ? rest.createdAt : rest.createdAt.toISOString()
+        } as Item;
+      });
     } catch (error) {
       console.error("Error getting found items:", error);
       return [];
@@ -270,11 +274,11 @@ export const getItemById = async (id: string): Promise<Item | undefined> => {
       
       if (!item) return undefined;
       
+      const { _id, ...rest } = item;
       return {
-        ...item,
-        id: item._id.toString(),
-        _id: undefined, // Remove _id property
-        createdAt: typeof item.createdAt === 'string' ? item.createdAt : item.createdAt.toISOString()
+        ...rest,
+        id: _id.toString(),
+        createdAt: typeof rest.createdAt === 'string' ? rest.createdAt : rest.createdAt.toISOString()
       } as Item;
     } catch (error) {
       console.error("Error getting item by ID:", error);
@@ -308,14 +312,16 @@ export const getUserItems = async (userId: string): Promise<Item[]> => {
         .sort({ createdAt: -1 })
         .toArray();
       
-      const allItems = [...lostItems, ...foundItems].map(item => ({
-        ...item,
-        id: item._id.toString(),
-        _id: undefined, // Remove _id property
-        createdAt: typeof item.createdAt === 'string' ? item.createdAt : item.createdAt.toISOString()
-      })) as Item[];
+      const mapItemWithId = (item: any) => {
+        const { _id, ...rest } = item;
+        return {
+          ...rest,
+          id: _id.toString(),
+          createdAt: typeof rest.createdAt === 'string' ? rest.createdAt : rest.createdAt.toISOString()
+        } as Item;
+      };
       
-      return allItems;
+      return [...lostItems.map(mapItemWithId), ...foundItems.map(mapItemWithId)];
     } catch (error) {
       console.error("Error getting user items:", error);
       return [];
@@ -363,11 +369,11 @@ export const updateItemStatus = async (
       );
       
       if (lostResult) {
+        const { _id, ...rest } = lostResult;
         return {
-          ...lostResult,
-          id: lostResult._id.toString(),
-          _id: undefined, // Remove _id property
-          createdAt: typeof lostResult.createdAt === 'string' ? lostResult.createdAt : lostResult.createdAt.toISOString()
+          ...rest,
+          id: _id.toString(),
+          createdAt: typeof rest.createdAt === 'string' ? rest.createdAt : rest.createdAt.toISOString()
         } as Item;
       }
       
@@ -379,11 +385,11 @@ export const updateItemStatus = async (
       );
       
       if (foundResult) {
+        const { _id, ...rest } = foundResult;
         return {
-          ...foundResult,
-          id: foundResult._id.toString(),
-          _id: undefined, // Remove _id property
-          createdAt: typeof foundResult.createdAt === 'string' ? foundResult.createdAt : foundResult.createdAt.toISOString()
+          ...rest,
+          id: _id.toString(), 
+          createdAt: typeof rest.createdAt === 'string' ? rest.createdAt : rest.createdAt.toISOString()
         } as Item;
       }
       
@@ -520,12 +526,14 @@ export const findPotentialMatches = async (itemId: string): Promise<Item[]> => {
         .find({ category: item.category })
         .toArray();
         
-      return matches.map(match => ({
-        ...match,
-        id: match._id.toString(),
-        _id: undefined, // Remove _id property
-        createdAt: typeof match.createdAt === 'string' ? match.createdAt : match.createdAt.toISOString()
-      })) as Item[];
+      return matches.map(match => {
+        const { _id, ...rest } = match;
+        return {
+          ...rest,
+          id: _id.toString(),
+          createdAt: typeof rest.createdAt === 'string' ? rest.createdAt : rest.createdAt.toISOString()
+        } as Item;
+      });
     } catch (error) {
       console.error("Error finding potential matches:", error);
       return [];

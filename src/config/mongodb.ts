@@ -7,11 +7,30 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://lost-found:sagar12
 let cachedClient: MongoClient | null = null;
 let cachedDb: Db | null = null;
 
+// Check if code is running in browser
+const isBrowser = typeof window !== 'undefined';
+
 export async function connectToMongo(): Promise<{ client: MongoClient; db: Db }> {
-  // For browser compatibility during development
-  if (typeof window !== 'undefined') {
-    console.log("Using mock MongoDB for browser development");
-    return { client: {} as MongoClient, db: {} as Db };
+  // For browser compatibility, return mock objects
+  if (isBrowser) {
+    console.log("Using mock MongoDB for browser environment");
+    return { 
+      client: {} as MongoClient, 
+      db: {
+        collection: () => ({
+          find: () => ({
+            sort: () => ({
+              toArray: async () => []
+            }),
+            toArray: async () => []
+          }),
+          findOne: async () => null,
+          insertOne: async () => ({ insertedId: "mock-id" }),
+          findOneAndUpdate: async () => null,
+          deleteOne: async () => ({ deletedCount: 1 })
+        })
+      } as unknown as Db 
+    };
   }
 
   if (cachedClient && cachedDb) {
@@ -37,12 +56,29 @@ export async function connectToMongo(): Promise<{ client: MongoClient; db: Db }>
     return { client, db };
   } catch (error) {
     console.error("Failed to connect to MongoDB:", error);
-    // Fallback to mock DB for browser development
-    return { client: {} as MongoClient, db: {} as Db };
+    throw new Error("Failed to connect to MongoDB");
   }
 }
 
 export function getDb() {
+  // If in browser, return mock db
+  if (isBrowser) {
+    return {
+      collection: () => ({
+        find: () => ({
+          sort: () => ({
+            toArray: async () => []
+          }),
+          toArray: async () => []
+        }),
+        findOne: async () => null,
+        insertOne: async () => ({ insertedId: "mock-id" }),
+        findOneAndUpdate: async () => null,
+        deleteOne: async () => ({ deletedCount: 1 })
+      })
+    } as unknown as Db;
+  }
+  
   if (!cachedDb) {
     throw new Error('You must call connectToMongo before using getDb');
   }
@@ -50,7 +86,7 @@ export function getDb() {
 }
 
 export async function closeMongoConnection() {
-  if (cachedClient) {
+  if (!isBrowser && cachedClient) {
     await cachedClient.close();
     cachedClient = null;
     cachedDb = null;

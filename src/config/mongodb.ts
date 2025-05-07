@@ -1,9 +1,8 @@
 
 import { MongoClient, Db, ServerApiVersion } from 'mongodb';
 
-// This should be replaced with your MongoDB Atlas connection string
-// For security reasons, in a production environment, this should come from environment variables
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/lost_found';
+// MongoDB Atlas connection string
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://lost-found:sagar123@lost-found.6pref4z.mongodb.net/?retryWrites=true&w=majority&appName=lost-found';
 
 let cachedClient: MongoClient | null = null;
 let cachedDb: Db | null = null;

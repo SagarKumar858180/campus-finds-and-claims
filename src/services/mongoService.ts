@@ -202,8 +202,9 @@ export const getLostItems = async (): Promise<Item[]> => {
       return lostItems.map(item => ({
         ...item,
         id: item._id.toString(),
-        createdAt: item.createdAt.toISOString()
-      }));
+        _id: undefined, // Remove _id property
+        createdAt: typeof item.createdAt === 'string' ? item.createdAt : item.createdAt.toISOString()
+      })) as Item[];
     } catch (error) {
       console.error("Error getting lost items:", error);
       return [];
@@ -226,8 +227,9 @@ export const getFoundItems = async (): Promise<Item[]> => {
       return foundItems.map(item => ({
         ...item,
         id: item._id.toString(),
-        createdAt: item.createdAt.toISOString()
-      }));
+        _id: undefined, // Remove _id property
+        createdAt: typeof item.createdAt === 'string' ? item.createdAt : item.createdAt.toISOString()
+      })) as Item[];
     } catch (error) {
       console.error("Error getting found items:", error);
       return [];
@@ -271,8 +273,9 @@ export const getItemById = async (id: string): Promise<Item | undefined> => {
       return {
         ...item,
         id: item._id.toString(),
+        _id: undefined, // Remove _id property
         createdAt: typeof item.createdAt === 'string' ? item.createdAt : item.createdAt.toISOString()
-      };
+      } as Item;
     } catch (error) {
       console.error("Error getting item by ID:", error);
       return undefined;
@@ -308,8 +311,9 @@ export const getUserItems = async (userId: string): Promise<Item[]> => {
       const allItems = [...lostItems, ...foundItems].map(item => ({
         ...item,
         id: item._id.toString(),
+        _id: undefined, // Remove _id property
         createdAt: typeof item.createdAt === 'string' ? item.createdAt : item.createdAt.toISOString()
-      }));
+      })) as Item[];
       
       return allItems;
     } catch (error) {
@@ -362,8 +366,9 @@ export const updateItemStatus = async (
         return {
           ...lostResult,
           id: lostResult._id.toString(),
+          _id: undefined, // Remove _id property
           createdAt: typeof lostResult.createdAt === 'string' ? lostResult.createdAt : lostResult.createdAt.toISOString()
-        };
+        } as Item;
       }
       
       // If not found, try found items
@@ -377,8 +382,9 @@ export const updateItemStatus = async (
         return {
           ...foundResult,
           id: foundResult._id.toString(),
+          _id: undefined, // Remove _id property
           createdAt: typeof foundResult.createdAt === 'string' ? foundResult.createdAt : foundResult.createdAt.toISOString()
-        };
+        } as Item;
       }
       
       return null;
@@ -517,8 +523,9 @@ export const findPotentialMatches = async (itemId: string): Promise<Item[]> => {
       return matches.map(match => ({
         ...match,
         id: match._id.toString(),
+        _id: undefined, // Remove _id property
         createdAt: typeof match.createdAt === 'string' ? match.createdAt : match.createdAt.toISOString()
-      }));
+      })) as Item[];
     } catch (error) {
       console.error("Error finding potential matches:", error);
       return [];

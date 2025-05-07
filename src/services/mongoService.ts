@@ -52,24 +52,29 @@ export const createUser = async (email: string, password: string, name: string):
     
     return newUser;
   } else {
-    const { db } = await connectToMongo();
-    const usersCollection = db.collection(collections.users);
-    
-    // Hash password in a real implementation
-    const hashedPassword = password; // Use bcrypt or similar in real app
-    
-    const result = await usersCollection.insertOne({
-      email,
-      password: hashedPassword,
-      name,
-      createdAt: new Date()
-    });
-    
-    return {
-      id: result.insertedId.toString(),
-      email,
-      name
-    };
+    try {
+      const { db } = await connectToMongo();
+      const usersCollection = db.collection(collections.users);
+      
+      // Hash password in a real implementation
+      const hashedPassword = password; // Use bcrypt or similar in real app
+      
+      const result = await usersCollection.insertOne({
+        email,
+        password: hashedPassword,
+        name,
+        createdAt: new Date()
+      });
+      
+      return {
+        id: result.insertedId.toString(),
+        email,
+        name
+      };
+    } catch (error) {
+      console.error("Error creating user:", error);
+      throw new Error("Failed to create user");
+    }
   }
 };
 
@@ -79,19 +84,24 @@ export const findUserByEmail = async (email: string): Promise<{ id: string; emai
     const user = users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
     return user || null;
   } else {
-    const { db } = await connectToMongo();
-    const usersCollection = db.collection(collections.users);
-    
-    const user = await usersCollection.findOne({ email: email.toLowerCase() });
-    
-    if (!user) return null;
-    
-    return {
-      id: user._id.toString(),
-      email: user.email,
-      name: user.name,
-      password: user.password
-    };
+    try {
+      const { db } = await connectToMongo();
+      const usersCollection = db.collection(collections.users);
+      
+      const user = await usersCollection.findOne({ email: email.toLowerCase() });
+      
+      if (!user) return null;
+      
+      return {
+        id: user._id.toString(),
+        email: user.email,
+        name: user.name,
+        password: user.password
+      };
+    } catch (error) {
+      console.error("Error finding user:", error);
+      return null;
+    }
   }
 };
 
@@ -136,39 +146,44 @@ export const createItem = async (
     
     return newItem;
   } else {
-    const { db } = await connectToMongo();
-    const collection = type === "lost" ? collections.lostItems : collections.foundItems;
-    
-    // Process the image
-    let imageUrl = '/placeholder.svg';
-    if (itemData.image) {
-      // In a real implementation, you'd upload to a storage service
-      // For this example, we'll convert to base64
-      imageUrl = await storeImage(itemData.image);
+    try {
+      const { db } = await connectToMongo();
+      const collection = type === "lost" ? collections.lostItems : collections.foundItems;
+      
+      // Process the image
+      let imageUrl = '/placeholder.svg';
+      if (itemData.image) {
+        // In a real implementation, you'd upload to a storage service
+        // For this example, we'll convert to base64
+        imageUrl = await storeImage(itemData.image);
+      }
+      
+      const newItem = {
+        name: itemData.name,
+        category: itemData.category,
+        location: itemData.location,
+        date: itemData.date,
+        description: itemData.description,
+        imageUrl,
+        userId,
+        userName,
+        contactInfo: itemData.contactInfo,
+        createdAt: new Date(),
+        type,
+        status: "searching" as ItemStatus
+      };
+      
+      const result = await db.collection(collection).insertOne(newItem);
+      
+      return {
+        ...newItem,
+        id: result.insertedId.toString(),
+        createdAt: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error("Error creating item:", error);
+      throw new Error("Failed to create item");
     }
-    
-    const newItem = {
-      name: itemData.name,
-      category: itemData.category,
-      location: itemData.location,
-      date: itemData.date,
-      description: itemData.description,
-      imageUrl,
-      userId,
-      userName,
-      contactInfo: itemData.contactInfo,
-      createdAt: new Date(),
-      type,
-      status: "searching"
-    };
-    
-    const result = await db.collection(collection).insertOne(newItem);
-    
-    return {
-      ...newItem,
-      id: result.insertedId.toString(),
-      createdAt: new Date().toISOString()
-    } as Item;
   }
 };
 
@@ -177,17 +192,22 @@ export const getLostItems = async (): Promise<Item[]> => {
     initStorage();
     return JSON.parse(localStorage.getItem('lostItems') || '[]');
   } else {
-    const { db } = await connectToMongo();
-    const lostItems = await db.collection(collections.lostItems)
-      .find()
-      .sort({ createdAt: -1 })
-      .toArray();
-    
-    return lostItems.map(item => ({
-      ...item,
-      id: item._id.toString(),
-      createdAt: item.createdAt.toISOString()
-    }));
+    try {
+      const { db } = await connectToMongo();
+      const lostItems = await db.collection(collections.lostItems)
+        .find()
+        .sort({ createdAt: -1 })
+        .toArray();
+      
+      return lostItems.map(item => ({
+        ...item,
+        id: item._id.toString(),
+        createdAt: item.createdAt.toISOString()
+      }));
+    } catch (error) {
+      console.error("Error getting lost items:", error);
+      return [];
+    }
   }
 };
 
@@ -196,17 +216,22 @@ export const getFoundItems = async (): Promise<Item[]> => {
     initStorage();
     return JSON.parse(localStorage.getItem('foundItems') || '[]');
   } else {
-    const { db } = await connectToMongo();
-    const foundItems = await db.collection(collections.foundItems)
-      .find()
-      .sort({ createdAt: -1 })
-      .toArray();
-    
-    return foundItems.map(item => ({
-      ...item,
-      id: item._id.toString(),
-      createdAt: item.createdAt.toISOString()
-    }));
+    try {
+      const { db } = await connectToMongo();
+      const foundItems = await db.collection(collections.foundItems)
+        .find()
+        .sort({ createdAt: -1 })
+        .toArray();
+      
+      return foundItems.map(item => ({
+        ...item,
+        id: item._id.toString(),
+        createdAt: item.createdAt.toISOString()
+      }));
+    } catch (error) {
+      console.error("Error getting found items:", error);
+      return [];
+    }
   }
 };
 
@@ -226,27 +251,32 @@ export const getItemById = async (id: string): Promise<Item | undefined> => {
     
     return item;
   } else {
-    const { db } = await connectToMongo();
-    
-    // Try to find in lost items
-    let item = await db.collection(collections.lostItems).findOne({
-      _id: new ObjectId(id)
-    });
-    
-    // If not found, try found items
-    if (!item) {
-      item = await db.collection(collections.foundItems).findOne({
+    try {
+      const { db } = await connectToMongo();
+      
+      // Try to find in lost items
+      let item = await db.collection(collections.lostItems).findOne({
         _id: new ObjectId(id)
       });
+      
+      // If not found, try found items
+      if (!item) {
+        item = await db.collection(collections.foundItems).findOne({
+          _id: new ObjectId(id)
+        });
+      }
+      
+      if (!item) return undefined;
+      
+      return {
+        ...item,
+        id: item._id.toString(),
+        createdAt: typeof item.createdAt === 'string' ? item.createdAt : item.createdAt.toISOString()
+      };
+    } catch (error) {
+      console.error("Error getting item by ID:", error);
+      return undefined;
     }
-    
-    if (!item) return undefined;
-    
-    return {
-      ...item,
-      id: item._id.toString(),
-      createdAt: item.createdAt.toISOString()
-    };
   }
 };
 
@@ -262,23 +292,30 @@ export const getUserItems = async (userId: string): Promise<Item[]> => {
     
     return [...userLostItems, ...userFoundItems];
   } else {
-    const { db } = await connectToMongo();
-    
-    const lostItems = await db.collection(collections.lostItems)
-      .find({ userId })
-      .sort({ createdAt: -1 })
-      .toArray();
+    try {
+      const { db } = await connectToMongo();
       
-    const foundItems = await db.collection(collections.foundItems)
-      .find({ userId })
-      .sort({ createdAt: -1 })
-      .toArray();
-    
-    return [...lostItems, ...foundItems].map(item => ({
-      ...item,
-      id: item._id.toString(),
-      createdAt: item.createdAt.toISOString()
-    }));
+      const lostItems = await db.collection(collections.lostItems)
+        .find({ userId })
+        .sort({ createdAt: -1 })
+        .toArray();
+        
+      const foundItems = await db.collection(collections.foundItems)
+        .find({ userId })
+        .sort({ createdAt: -1 })
+        .toArray();
+      
+      const allItems = [...lostItems, ...foundItems].map(item => ({
+        ...item,
+        id: item._id.toString(),
+        createdAt: typeof item.createdAt === 'string' ? item.createdAt : item.createdAt.toISOString()
+      }));
+      
+      return allItems;
+    } catch (error) {
+      console.error("Error getting user items:", error);
+      return [];
+    }
   }
 };
 
@@ -311,39 +348,44 @@ export const updateItemStatus = async (
     
     return null;
   } else {
-    const { db } = await connectToMongo();
-    
-    // Try to update in lost items
-    const lostResult = await db.collection(collections.lostItems).findOneAndUpdate(
-      { _id: new ObjectId(itemId) },
-      { $set: { status } },
-      { returnDocument: 'after' }
-    );
-    
-    if (lostResult) {
-      return {
-        ...lostResult,
-        id: lostResult._id.toString(),
-        createdAt: lostResult.createdAt.toISOString()
-      };
+    try {
+      const { db } = await connectToMongo();
+      
+      // Try to update in lost items
+      const lostResult = await db.collection(collections.lostItems).findOneAndUpdate(
+        { _id: new ObjectId(itemId) },
+        { $set: { status } },
+        { returnDocument: 'after' }
+      );
+      
+      if (lostResult) {
+        return {
+          ...lostResult,
+          id: lostResult._id.toString(),
+          createdAt: typeof lostResult.createdAt === 'string' ? lostResult.createdAt : lostResult.createdAt.toISOString()
+        };
+      }
+      
+      // If not found, try found items
+      const foundResult = await db.collection(collections.foundItems).findOneAndUpdate(
+        { _id: new ObjectId(itemId) },
+        { $set: { status } },
+        { returnDocument: 'after' }
+      );
+      
+      if (foundResult) {
+        return {
+          ...foundResult,
+          id: foundResult._id.toString(),
+          createdAt: typeof foundResult.createdAt === 'string' ? foundResult.createdAt : foundResult.createdAt.toISOString()
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Error updating item status:", error);
+      return null;
     }
-    
-    // If not found, try found items
-    const foundResult = await db.collection(collections.foundItems).findOneAndUpdate(
-      { _id: new ObjectId(itemId) },
-      { $set: { status } },
-      { returnDocument: 'after' }
-    );
-    
-    if (foundResult) {
-      return {
-        ...foundResult,
-        id: foundResult._id.toString(),
-        createdAt: foundResult.createdAt.toISOString()
-      };
-    }
-    
-    return null;
   }
 };
 
@@ -381,32 +423,37 @@ export const deleteItem = async (itemId: string, userId: string): Promise<boolea
     // Item either doesn't exist or user doesn't own it
     return false;
   } else {
-    const { db } = await connectToMongo();
-    
-    // First check if the user owns the item in lost items
-    const lostItem = await db.collection(collections.lostItems).findOne({
-      _id: new ObjectId(itemId),
-      userId
-    });
-    
-    if (lostItem) {
-      await db.collection(collections.lostItems).deleteOne({ _id: new ObjectId(itemId) });
-      return true;
+    try {
+      const { db } = await connectToMongo();
+      
+      // First check if the user owns the item in lost items
+      const lostItem = await db.collection(collections.lostItems).findOne({
+        _id: new ObjectId(itemId),
+        userId
+      });
+      
+      if (lostItem) {
+        await db.collection(collections.lostItems).deleteOne({ _id: new ObjectId(itemId) });
+        return true;
+      }
+      
+      // If not found in lost items, check found items
+      const foundItem = await db.collection(collections.foundItems).findOne({
+        _id: new ObjectId(itemId),
+        userId
+      });
+      
+      if (foundItem) {
+        await db.collection(collections.foundItems).deleteOne({ _id: new ObjectId(itemId) });
+        return true;
+      }
+      
+      // Item either doesn't exist or user doesn't own it
+      return false;
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      return false;
     }
-    
-    // If not found in lost items, check found items
-    const foundItem = await db.collection(collections.foundItems).findOne({
-      _id: new ObjectId(itemId),
-      userId
-    });
-    
-    if (foundItem) {
-      await db.collection(collections.foundItems).deleteOne({ _id: new ObjectId(itemId) });
-      return true;
-    }
-    
-    // Item either doesn't exist or user doesn't own it
-    return false;
   }
 };
 
@@ -449,27 +496,32 @@ export const findPotentialMatches = async (itemId: string): Promise<Item[]> => {
       return false;
     });
   } else {
-    const { db } = await connectToMongo();
-    
-    // Determine which collection to search in
-    const oppositeCollection = item.type === "lost" 
-      ? collections.foundItems 
-      : collections.lostItems;
-    
-    // Create search criteria
-    const itemWords = item.name.toLowerCase().split(' ')
-      .filter(word => word.length > 2);
-    
-    // Use text search if MongoDB has text index set up
-    // For simplicity, we'll just do a basic category match
-    const matches = await db.collection(oppositeCollection)
-      .find({ category: item.category })
-      .toArray();
+    try {
+      const { db } = await connectToMongo();
       
-    return matches.map(match => ({
-      ...match,
-      id: match._id.toString(),
-      createdAt: match.createdAt.toISOString()
-    }));
+      // Determine which collection to search in
+      const oppositeCollection = item.type === "lost" 
+        ? collections.foundItems 
+        : collections.lostItems;
+      
+      // Create search criteria
+      const itemWords = item.name.toLowerCase().split(' ')
+        .filter(word => word.length > 2);
+      
+      // Use text search if MongoDB has text index set up
+      // For simplicity, we'll just do a basic category match
+      const matches = await db.collection(oppositeCollection)
+        .find({ category: item.category })
+        .toArray();
+        
+      return matches.map(match => ({
+        ...match,
+        id: match._id.toString(),
+        createdAt: typeof match.createdAt === 'string' ? match.createdAt : match.createdAt.toISOString()
+      }));
+    } catch (error) {
+      console.error("Error finding potential matches:", error);
+      return [];
+    }
   }
 };

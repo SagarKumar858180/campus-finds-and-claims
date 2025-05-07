@@ -1,8 +1,9 @@
 
 import { MongoClient, Db, ServerApiVersion } from 'mongodb';
 
-// MongoDB connection string - in production, this would come from environment variables
-const MONGODB_URI = 'mongodb://localhost:27017/lost_found';
+// This should be replaced with your MongoDB Atlas connection string
+// For security reasons, in a production environment, this should come from environment variables
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/lost_found';
 
 let cachedClient: MongoClient | null = null;
 let cachedDb: Db | null = null;
@@ -18,22 +19,28 @@ export async function connectToMongo(): Promise<{ client: MongoClient; db: Db }>
     return { client: cachedClient, db: cachedDb };
   }
 
-  const client = new MongoClient(MONGODB_URI, {
-    serverApi: {
-      version: ServerApiVersion.v1,
-      strict: true,
-      deprecationErrors: true,
-    }
-  });
+  try {
+    const client = new MongoClient(MONGODB_URI, {
+      serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+      }
+    });
 
-  await client.connect();
-  const db = client.db();
-  
-  cachedClient = client;
-  cachedDb = db;
-  
-  console.log("Connected to MongoDB");
-  return { client, db };
+    await client.connect();
+    const db = client.db();
+    
+    cachedClient = client;
+    cachedDb = db;
+    
+    console.log("Connected to MongoDB Atlas");
+    return { client, db };
+  } catch (error) {
+    console.error("Failed to connect to MongoDB:", error);
+    // Fallback to mock DB for browser development
+    return { client: {} as MongoClient, db: {} as Db };
+  }
 }
 
 export function getDb() {
